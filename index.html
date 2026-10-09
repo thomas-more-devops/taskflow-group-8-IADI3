@@ -4,11 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TaskFlow - Task Management App</title>
+
+    <!-- Main CSS file -->
     <link rel="stylesheet" href="styles/main.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="container">
+
+        <!-- App header -->
         <header class="header">
             <div class="header-content">
                 <h1 class="app-title">
@@ -20,6 +24,8 @@
         </header>
 
         <main class="main">
+
+            <!-- Input for adding new tasks -->
             <div class="task-input-section">
                 <div class="input-container">
                     <input type="text" id="taskInput" placeholder="What needs to be done?" class="task-input">
@@ -30,14 +36,18 @@
                 </div>
             </div>
 
+            <!-- List of tasks -->
             <div class="tasks-section">
                 <div class="tasks-header">
                     <h2>Your Tasks</h2>
                     <span id="taskCount" class="task-count">0 tasks</span>
                 </div>
+
+                <!-- Tasks are added here using JavaScript -->
                 <div id="tasksList" class="tasks-list">
-                    <!-- Tasks will be dynamically added here -->
                 </div>
+
+                <!-- Shown when there are no tasks -->
                 <div id="emptyState" class="empty-state">
                     <div class="empty-icon">✨</div>
                     <h3>No tasks yet</h3>
@@ -45,6 +55,7 @@
                 </div>
             </div>
 
+            <!-- Task statistics -->
             <div class="stats-section">
                 <div class="stats-grid">
                     <div class="stat-card">
@@ -63,11 +74,13 @@
             </div>
         </main>
 
+        <!-- Footer -->
         <footer class="footer">
             <p>&copy; 2024 TaskFlow. Built with HTML, CSS, and JavaScript.</p>
         </footer>
     </div>
 
+    <!-- JavaScript for task functionality -->
     <script src="scripts/app.js"></script>
 </body>
 </html>
