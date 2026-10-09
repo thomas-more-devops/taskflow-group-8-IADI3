@@ -1,4 +1,30 @@
+/* ==========================================================================
+   TaskFlow - Main Stylesheet
+   --------------------------------------------------------------------------
+   Design overview:
+   - Visual style: soft "glass" cards (95% white, rounded corners, deep soft
+     shadows) floating on a purple brand gradient.
+   - Brand palette: #667eea (indigo blue) -> #764ba2 (purple). The same
+     gradient is reused on the page background and the primary button so
+     the brand reads as one consistent identity.
+   - Neutrals: a cool gray scale (#f8fafc ... #2d3748) for surfaces, borders
+     and text, so the colorful gradient stays the only strong accent.
+   - Semantic colors: green #48bb78 = done, blue #3182ce = edit,
+     red #e53e3e = delete. Color always reinforces meaning.
+   - Spacing uses rem units (1rem = 16px by default) so the layout scales
+     with the user's browser font-size setting (accessibility).
+   - Radius scale: 20px (header) > 16px (sections) > 12px (inputs, cards,
+     tasks) > 6-8px (small controls). Bigger elements get rounder corners
+     so nested shapes look visually balanced.
+   - Motion: short 0.3s "ease" transitions everywhere for a consistent,
+     calm feel; fast enough not to slow the user down.
+   ========================================================================== */
+
+
 /* Reset and Base Styles */
+/* Remove inconsistent browser default spacing so every browser starts from
+   the same baseline. border-box makes width/height include padding and
+   border, which makes sizing components predictable. */
 * {
     margin: 0;
     padding: 0;
@@ -6,19 +32,32 @@
 }
 
 body {
+    /* Inter is a modern font designed for screens. If Google Fonts cannot
+       load (e.g. offline), fall back to each operating system's native UI
+       font so the app still looks native rather than defaulting to Times. */
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    /* Diagonal brand gradient (135deg = top-left to bottom-right) gives the
+       page depth and personality without needing images. */
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    /* Fill at least the full screen so the gradient never stops halfway. */
     min-height: 100vh;
+    /* 1.6 line height is a comfortable reading rhythm for body text. */
     line-height: 1.6;
+    /* Dark gray instead of pure black: softer on the eyes, still high
+       contrast against the white cards. */
     color: #333;
 }
 
 /* Container */
+/* A narrow max-width (800px) keeps lines short and the task list easy to
+   scan; a to-do app does not benefit from very wide layouts. */
 .container {
     max-width: 800px;
-    margin: 0 auto;
+    margin: 0 auto; /* center the column horizontally */
     padding: 2rem 1rem;
     min-height: 100vh;
+    /* Column flexbox + .main { flex: 1 } pushes the footer to the bottom of
+       the screen even when there are only a few tasks ("sticky footer"). */
     display: flex;
     flex-direction: column;
 }
@@ -26,22 +65,26 @@ body {
 /* Header */
 .header {
     text-align: center;
-    margin-bottom: 3rem;
+    margin-bottom: 3rem; /* extra space separates branding from the tool itself */
 }
 
+/* Glassmorphism card: almost-opaque white keeps text readable, while the
+   blur and large soft shadow make it float above the gradient. */
 .header-content {
     background: rgba(255, 255, 255, 0.95);
     padding: 2rem;
-    border-radius: 20px;
+    border-radius: 20px; /* largest radius: the most prominent card */
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
     backdrop-filter: blur(10px);
 }
 
 .app-title {
     font-size: 2.5rem;
-    font-weight: 700;
+    font-weight: 700; /* bold title = clear top of the visual hierarchy */
     color: #4a5568;
     margin-bottom: 0.5rem;
+    /* Flexbox centers the emoji icon and the text on one line with an even
+       gap, independent of the emoji's own baseline. */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -49,9 +92,10 @@ body {
 }
 
 .icon {
-    font-size: 2.5rem;
+    font-size: 2.5rem; /* icon matches the title size so they read as one logo */
 }
 
+/* Lighter gray and normal weight make the subtitle clearly secondary. */
 .app-subtitle {
     font-size: 1.1rem;
     color: #718096;
@@ -59,6 +103,7 @@ body {
 }
 
 /* Main Content */
+/* Takes up all remaining vertical space (see .container sticky footer). */
 .main {
     flex: 1;
 }
@@ -68,27 +113,33 @@ body {
     margin-bottom: 2rem;
 }
 
+/* Same glass-card style as the other sections for visual consistency. */
 .input-container {
     background: rgba(255, 255, 255, 0.95);
     padding: 1.5rem;
     border-radius: 16px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    /* Input and button side by side on desktop; stacked on mobile
+       (see Responsive Design below). */
     display: flex;
     gap: 1rem;
     align-items: center;
 }
 
 .task-input {
-    flex: 1;
+    flex: 1; /* the input takes all space the button does not need */
     border: 2px solid #e2e8f0;
     border-radius: 12px;
-    padding: 1rem 1.5rem;
-    font-size: 1rem;
-    font-family: inherit;
+    padding: 1rem 1.5rem; /* generous padding = large, easy click/tap target */
+    font-size: 1rem; /* 16px also prevents iOS Safari from auto-zooming on focus */
+    font-family: inherit; /* form controls don't inherit fonts by default */
     transition: all 0.3s ease;
-    background: #f8fafc;
+    background: #f8fafc; /* slightly gray when idle, turns white on focus */
 }
 
+/* Focus state: the default browser outline is replaced by a brand-colored
+   border plus a soft "glow" ring, so keyboard users still get a clearly
+   visible focus indicator (accessibility) that matches the design. */
 .task-input:focus {
     outline: none;
     border-color: #667eea;
@@ -96,16 +147,19 @@ body {
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
+/* Light placeholder so it is never confused with real typed text. */
 .task-input::placeholder {
     color: #a0aec0;
 }
 
+/* Primary call-to-action: the only element using the brand gradient inside
+   the cards, so the eye goes straight to it. */
 .add-btn {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     border: none;
-    border-radius: 12px;
-    padding: 1rem 1.5rem;
+    border-radius: 12px; /* same radius as the input so they look like a pair */
+    padding: 1rem 1.5rem; /* same padding as the input = equal heights */
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
@@ -113,14 +167,17 @@ body {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    white-space: nowrap;
+    white-space: nowrap; /* "Add Task" never wraps onto two lines */
 }
 
+/* Hover "lift": moving up 2px with a colored shadow makes the button feel
+   physical and clickable. */
 .add-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
 }
 
+/* Pressing pushes it back down, giving tactile click feedback. */
 .add-btn:active {
     transform: translateY(0);
 }
@@ -139,6 +196,8 @@ body {
     margin-bottom: 2rem;
 }
 
+/* Title on the left, counter badge on the right; a subtle bottom border
+   separates the heading from the list without adding visual noise. */
 .tasks-header {
     display: flex;
     justify-content: space-between;
@@ -154,6 +213,7 @@ body {
     color: #2d3748;
 }
 
+/* "Pill" badge (fully rounded) is a familiar pattern for counters. */
 .task-count {
     background: #e2e8f0;
     color: #4a5568;
@@ -163,17 +223,22 @@ body {
     font-weight: 500;
 }
 
+/* Vertical flex list with gap: even spacing between tasks without
+   margin hacks on the first/last item. */
 .tasks-list {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
 }
 
+/* Each task is its own small card: light background and border keep items
+   visually separate while staying calm. */
 .task-item {
     background: #f8fafc;
     border: 1px solid #e2e8f0;
     border-radius: 12px;
     padding: 1rem 1.5rem;
+    /* Content (checkbox + text) on the left, action buttons on the right. */
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -181,12 +246,16 @@ body {
     cursor: pointer;
 }
 
+/* Hover nudges the task 4px to the right with a shadow, highlighting the
+   row the user is about to interact with. */
 .task-item:hover {
     transform: translateX(4px);
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     border-color: #cbd5e0;
 }
 
+/* Completed tasks: green tint signals success, reduced opacity pushes them
+   into the background so pending work stands out. */
 .task-item.completed {
     background: #f0fff4;
     border-color: #9ae6b4;
@@ -197,24 +266,29 @@ body {
     display: flex;
     align-items: center;
     gap: 1rem;
-    flex: 1;
+    flex: 1; /* text takes all space left by the action buttons */
 }
 
+/* Custom checkbox (a styled div) instead of the native <input>, so it looks
+   identical in every browser and matches the rounded design. */
 .task-checkbox {
     width: 20px;
     height: 20px;
     border: 2px solid #cbd5e0;
-    border-radius: 6px;
+    border-radius: 6px; /* rounded square, echoing the card corners */
     cursor: pointer;
-    position: relative;
+    position: relative; /* anchor for the absolutely positioned checkmark */
     transition: all 0.3s ease;
 }
 
+/* Checked = filled with the "success" green. */
 .task-checkbox.checked {
     background: #48bb78;
     border-color: #48bb78;
 }
 
+/* The checkmark is drawn with a pseudo-element, so no image or extra HTML
+   is needed. top/left 50% + translate(-50%, -50%) centers it exactly. */
 .task-checkbox.checked::after {
     content: '✓';
     color: white;
@@ -232,6 +306,8 @@ body {
     transition: all 0.3s ease;
 }
 
+/* Strikethrough + lighter gray: the universal "done" convention, readable
+   at a glance even without the color cue. */
 .task-item.completed .task-text {
     text-decoration: line-through;
     color: #718096;
@@ -242,16 +318,19 @@ body {
     gap: 0.5rem;
 }
 
+/* Icon buttons are transparent by default to keep the list clean; they only
+   show a background on hover. */
 .task-btn {
     background: none;
     border: none;
     cursor: pointer;
-    padding: 0.5rem;
+    padding: 0.5rem; /* enlarges the clickable area around the small icon */
     border-radius: 8px;
     transition: all 0.3s ease;
     font-size: 1.1rem;
 }
 
+/* Edit = blue (neutral, safe action). */
 .edit-btn {
     color: #3182ce;
 }
@@ -260,6 +339,7 @@ body {
     background: #ebf8ff;
 }
 
+/* Delete = red (destructive action), so the user thinks twice. */
 .delete-btn {
     color: #e53e3e;
 }
@@ -269,6 +349,8 @@ body {
 }
 
 /* Empty State */
+/* Friendly message with a large icon instead of a blank box, guiding new
+   users toward their first action. */
 .empty-state {
     text-align: center;
     padding: 3rem 2rem;
@@ -294,12 +376,17 @@ body {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 }
 
+/* auto-fit + minmax(150px, 1fr): the grid automatically fits as many
+   150px+ columns as possible, so the cards reflow on smaller screens
+   without extra media queries. */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 1rem;
 }
 
+/* Very subtle gray gradient gives the stat cards a little depth while
+   keeping them quieter than the main task list. */
 .stat-card {
     background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
     padding: 1.5rem;
@@ -308,8 +395,9 @@ body {
     border: 1px solid #e2e8f0;
 }
 
+/* Big bold number + small label: the number is what the user scans for. */
 .stat-number {
-    display: block;
+    display: block; /* puts the number on its own line above the label */
     font-size: 2rem;
     font-weight: 700;
     color: #2d3748;
@@ -323,6 +411,8 @@ body {
 }
 
 /* Footer */
+/* Semi-transparent white text sits directly on the gradient: readable but
+   low-key, so it does not compete with the content. */
 .footer {
     text-align: center;
     margin-top: 2rem;
@@ -332,28 +422,36 @@ body {
 }
 
 /* Responsive Design */
+/* Desktop styles are the default; these breakpoints adapt the layout for
+   tablets (<= 768px) and phones (<= 480px). */
+
+/* Tablet and small laptop screens */
 @media (max-width: 768px) {
+    /* Less outer padding gives content more room on narrow screens. */
     .container {
         padding: 1rem 0.5rem;
     }
-    
+
     .app-title {
         font-size: 2rem;
     }
-    
+
+    /* Stack input above a full-width button: both stay large and easy to
+       tap instead of squeezing side by side. */
     .input-container {
         flex-direction: column;
         align-items: stretch;
     }
-    
+
     .add-btn {
-        justify-content: center;
+        justify-content: center; /* center label in the now full-width button */
     }
-    
+
     .task-item {
         padding: 1rem;
     }
-    
+
+    /* Title and counter stack vertically so neither gets cramped. */
     .tasks-header {
         flex-direction: column;
         gap: 1rem;
@@ -361,21 +459,25 @@ body {
     }
 }
 
+/* Phones */
 @media (max-width: 480px) {
+    /* One stat card per row: numbers stay large and readable. */
     .stats-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .app-title {
         font-size: 1.75rem;
     }
-    
+
     .header-content {
         padding: 1.5rem;
     }
 }
 
 /* Animation Classes */
+/* New tasks fade in while sliding up 20px: a short, subtle motion that
+   draws attention to what just changed without being distracting. */
 @keyframes slideIn {
     from {
         opacity: 0;
@@ -387,6 +489,7 @@ body {
     }
 }
 
+/* 0.3s matches the transition timing used across the app. */
 .task-item {
     animation: slideIn 0.3s ease;
 }
