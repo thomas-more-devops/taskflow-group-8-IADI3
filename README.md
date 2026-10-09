@@ -340,6 +340,18 @@ Potential improvements for version 2.0:
 - [ ] **Sync**: Cloud synchronization across devices
 - [ ] **Offline Mode**: Service worker for offline functionality
 
+### 📝 GitHub Issues
+
+Track the development of future enhancements:
+- [ ] **Task Categories:** Create categories and assign different colors
+- [ ] **Due Dates:** Add deadlines and reminders for tasks
+- [ ] **Priority Levels:** Implement task priority selection and sorting
+- [ ] **Search & Filter:** Add task search and filtering options
+- [ ] **Dark Mode:** Implement light and dark theme switching
+- [ ] **Collaboration:** Enable task sharing between users
+- [ ] **Sync:** Implement cloud synchronization
+- [ ] **Offline Mode:** Enable offline task management
+
 ## 🙏 Acknowledgments
 
 - **Inter Font**: Beautiful typography by Google Fonts
