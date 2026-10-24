@@ -41,6 +41,33 @@
                 </div>
             </div>
 
+            <!-- Search & filter section -->
+            <div class="search-section">
+                <div class="search-bar">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="searchInput" class="search-input" placeholder="Search tasks...">
+                </div>
+                <div class="filter-row">
+                    <div class="quick-filters">
+                        <button class="filter-btn active" data-filter="all">All</button>
+                        <button class="filter-btn" data-filter="pending">Pending</button>
+                        <button class="filter-btn" data-filter="completed">Completed</button>
+                        <button class="filter-btn" data-filter="today">Created Today</button>
+                    </div>
+                    <div class="sort-controls">
+                        <select id="sortSelect" class="sort-select">
+                            <option value="default">Sort: Default</option>
+                            <option value="newest">Newest first</option>
+                            <option value="oldest">Oldest first</option>
+                            <option value="az">A → Z</option>
+                            <option value="za">Z → A</option>
+                        </select>
+                        <button id="clearFiltersBtn" class="clear-filters-btn">✖ Clear filters</button>
+                    </div>
+                </div>
+                <p id="searchResultsInfo" class="search-results-info"></p>
+            </div>
+
             <!-- List of tasks -->
             <div class="tasks-section">
                 <div class="tasks-header">

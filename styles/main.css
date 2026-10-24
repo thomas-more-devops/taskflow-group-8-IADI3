@@ -495,6 +495,74 @@ body {
 }
 
 
+/* ===================================
+   SEARCH & FILTER SYSTEM
+   =================================== */
+.search-section {
+    background: #fff;
+    border-radius: 16px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+.search-bar { position: relative; margin-bottom: 1rem; }
+.search-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.6;
+}
+.search-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.75rem 1rem 0.75rem 2.75rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 1rem;
+}
+.search-input:focus { outline: none; border-color: #667eea; }
+.filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+.quick-filters, .sort-controls { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.filter-btn {
+    padding: 0.4rem 0.9rem;
+    border: 1px solid #cbd5e0;
+    border-radius: 999px;
+    background: #fff;
+    color: #4a5568;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.filter-btn:hover { border-color: #667eea; color: #667eea; }
+.filter-btn.active { background: #667eea; border-color: #667eea; color: #fff; }
+.sort-select {
+    padding: 0.4rem 0.6rem;
+    border: 1px solid #cbd5e0;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.85rem;
+}
+.clear-filters-btn {
+    padding: 0.4rem 0.9rem;
+    border: none;
+    border-radius: 8px;
+    background: #fed7d7;
+    color: #c53030;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+.clear-filters-btn:hover { background: #feb2b2; }
+.search-results-info { margin: 0.75rem 0 0; font-size: 0.85rem; color: #718096; min-height: 1em; }
+.search-highlight { background: #fefcbf; color: inherit; padding: 0 2px; border-radius: 3px; }
+.no-results { text-align: center; color: #718096; padding: 1.5rem; }
+
 /* Task priority controls and labels */
 .priority-input {
     padding: 1rem;
