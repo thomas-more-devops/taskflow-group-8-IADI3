@@ -95,6 +95,11 @@ class TaskFlow {
             }
 
             const taskText = taskInput.value.trim();
+            const priorityInput = document.getElementById('priorityInput');
+            const selectedPriority = priorityInput ? priorityInput.value : 'medium';
+            const priority = ['high', 'medium', 'low'].includes(selectedPriority)
+                ? selectedPriority
+                : 'medium';
 
             if (taskText === '') {
                 this.showNotification('Please enter a task description', 'warning');
@@ -110,6 +115,7 @@ class TaskFlow {
             const newTask = {
                 id: this.taskIdCounter++,
                 text: taskText,
+                priority,
                 completed: false,
                 createdAt: new Date().toISOString(),
                 completedAt: null
@@ -181,7 +187,7 @@ class TaskFlow {
             this.renderTasks();
             this.updateStats();
 
-            const message = task.completed ? 'Task completed! 🎉' : 'Task marked as pending';
+            const message = task.completed ? 'Task completed! ðŸŽ‰' : 'Task marked as pending';
             this.showNotification(message, 'success');
         } catch (error) {
             console.error('Error toggling task:', error);
@@ -262,17 +268,18 @@ class TaskFlow {
             tasksList.innerHTML = sortedTasks.map(task => `
                 <div class="task-item ${task.completed ? 'completed' : ''}" data-task-id="${task.id}">
                     <div class="task-content">
-                        <div class="task-checkbox ${task.completed ? 'checked' : ''}" 
+                        <div class="task-checkbox ${task.completed ? 'checked' : ''}"
                              onclick="taskFlow.toggleTask(${task.id})">
                         </div>
+                        <span class="priority-badge priority-${['high', 'medium', 'low'].includes(task.priority) ? task.priority : 'medium'}">${['high', 'medium', 'low'].includes(task.priority) ? task.priority : 'medium'}</span>
                         <span class="task-text">${this.highlightText(task.text)}</span>
                     </div>
                     <div class="task-actions">
                         <button class="task-btn edit-btn" onclick="taskFlow.editTask(${task.id})" title="Edit task">
-                            ✏️
+                            âœï¸
                         </button>
                         <button class="task-btn delete-btn" onclick="taskFlow.deleteTask(${task.id})" title="Delete task">
-                            🗑️
+                            ðŸ—‘ï¸
                         </button>
                     </div>
                 </div>
@@ -358,7 +365,12 @@ class TaskFlow {
                 throw new Error('Invalid tasks format: expected array');
             }
 
-            return tasks;
+            return tasks.map(task => ({
+                ...task,
+                priority: ['high', 'medium', 'low'].includes(task.priority)
+                    ? task.priority
+                    : 'medium'
+            }));
         } catch (error) {
             console.error('Failed to load tasks:', error);
             this.showNotification('Failed to load tasks. Starting with fresh list.', 'warning');
@@ -475,13 +487,23 @@ class TaskFlow {
                 return sorted.sort((a, b) => a.text.localeCompare(b.text));
             case 'za':
                 return sorted.sort((a, b) => b.text.localeCompare(a.text));
-            default:
+            default: {
+                // Pending first, then by priority (high → low), then newest
+                const priorityOrder = { high: 1, medium: 2, low: 3 };
                 return sorted.sort((a, b) => {
                     if (a.completed !== b.completed) {
                         return a.completed - b.completed;
                     }
+                    if (!a.completed) {
+                        const priorityA = priorityOrder[a.priority] || 2;
+                        const priorityB = priorityOrder[b.priority] || 2;
+                        if (priorityA !== priorityB) {
+                            return priorityA - priorityB;
+                        }
+                    }
                     return new Date(b.createdAt) - new Date(a.createdAt);
                 });
+            }
         }
     }
 
