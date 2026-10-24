@@ -10,6 +10,9 @@ class TaskFlow {
     constructor() {
         try {
             this.tasks = this.loadTasks();
+            this.searchQuery = '';
+            this.activeFilter = 'all';
+            this.sortOption = 'default';
             this.taskIdCounter = this.getNextTaskId();
             this.initializeApp();
             this.bindEvents();
@@ -69,6 +72,8 @@ class TaskFlow {
                     this.addTask();
                 }
             });
+
+            this.bindSearchEvents();
 
             taskInput.focus();
         } catch (error) {
@@ -244,12 +249,15 @@ class TaskFlow {
             tasksList.style.display = 'flex';
             emptyState.style.display = 'none';
 
-            const sortedTasks = [...this.tasks].sort((a, b) => {
-                if (a.completed !== b.completed) {
-                    return a.completed - b.completed;
-                }
-                return new Date(b.createdAt) - new Date(a.createdAt);
-            });
+            const visibleTasks = this.getFilteredTasks();
+            this.updateSearchInfo(visibleTasks.length);
+
+            if (visibleTasks.length === 0) {
+                tasksList.innerHTML = '<p class="no-results">No tasks match your search or filters.</p>';
+                return;
+            }
+
+            const sortedTasks = this.sortTasks(visibleTasks);
 
             tasksList.innerHTML = sortedTasks.map(task => `
                 <div class="task-item ${task.completed ? 'completed' : ''}" data-task-id="${task.id}">
@@ -257,7 +265,7 @@ class TaskFlow {
                         <div class="task-checkbox ${task.completed ? 'checked' : ''}" 
                              onclick="taskFlow.toggleTask(${task.id})">
                         </div>
-                        <span class="task-text">${this.escapeHtml(task.text)}</span>
+                        <span class="task-text">${this.highlightText(task.text)}</span>
                     </div>
                     <div class="task-actions">
                         <button class="task-btn edit-btn" onclick="taskFlow.editTask(${task.id})" title="Edit task">
@@ -382,6 +390,136 @@ class TaskFlow {
             console.error('Failed to load task counter:', error);
             return 1;
         }
+    }
+
+    /* ===================================
+       SEARCH & FILTER FUNCTIONS
+       =================================== */
+
+    /**
+     * Binds events for the search input, filter buttons, sort select and clear button
+     */
+    bindSearchEvents() {
+        const searchInput = document.getElementById('searchInput');
+        const sortSelect = document.getElementById('sortSelect');
+        const clearBtn = document.getElementById('clearFiltersBtn');
+
+        if (searchInput) {
+            // Real-time search as the user types
+            searchInput.addEventListener('input', () => {
+                this.searchQuery = searchInput.value.trim().toLowerCase();
+                this.renderTasks();
+            });
+        }
+
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => this.setFilter(btn.dataset.filter));
+        });
+
+        if (sortSelect) {
+            sortSelect.addEventListener('change', () => {
+                this.sortOption = sortSelect.value;
+                this.renderTasks();
+            });
+        }
+
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => this.clearFilters());
+        }
+    }
+
+    /**
+     * Sets the active quick filter and updates the button styles
+     * @param {string} filter - all | pending | completed | today
+     */
+    setFilter(filter) {
+        this.activeFilter = filter;
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.filter === filter);
+        });
+        this.renderTasks();
+    }
+
+    /**
+     * Applies the search query and active filter to the task list
+     * @returns {Array} Tasks that match
+     */
+    getFilteredTasks() {
+        const today = new Date().toDateString();
+        return this.tasks.filter(task => {
+            if (this.searchQuery && !task.text.toLowerCase().includes(this.searchQuery)) {
+                return false;
+            }
+            switch (this.activeFilter) {
+                case 'pending': return !task.completed;
+                case 'completed': return task.completed;
+                case 'today': return new Date(task.createdAt).toDateString() === today;
+                default: return true;
+            }
+        });
+    }
+
+    /**
+     * Sorts tasks according to the selected sort option
+     * @param {Array} tasks
+     * @returns {Array} Sorted copy
+     */
+    sortTasks(tasks) {
+        const sorted = [...tasks];
+        switch (this.sortOption) {
+            case 'newest':
+                return sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            case 'oldest':
+                return sorted.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+            case 'az':
+                return sorted.sort((a, b) => a.text.localeCompare(b.text));
+            case 'za':
+                return sorted.sort((a, b) => b.text.localeCompare(a.text));
+            default:
+                return sorted.sort((a, b) => {
+                    if (a.completed !== b.completed) {
+                        return a.completed - b.completed;
+                    }
+                    return new Date(b.createdAt) - new Date(a.createdAt);
+                });
+        }
+    }
+
+    /**
+     * Escapes task text and wraps search matches in a highlight mark
+     * @param {string} text
+     * @returns {string} Safe HTML
+     */
+    highlightText(text) {
+        const safe = this.escapeHtml(text);
+        if (!this.searchQuery) return safe;
+        const query = this.escapeHtml(this.searchQuery).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return safe.replace(new RegExp(`(${query})`, 'gi'), '<mark class="search-highlight">$1</mark>');
+    }
+
+    /**
+     * Shows how many tasks match the current search and filters
+     * @param {number} count
+     */
+    updateSearchInfo(count) {
+        const info = document.getElementById('searchResultsInfo');
+        if (!info) return;
+        const filtering = this.searchQuery || this.activeFilter !== 'all';
+        info.textContent = filtering ? `Showing ${count} of ${this.tasks.length} tasks` : '';
+    }
+
+    /**
+     * Resets search, filter and sort to their defaults
+     */
+    clearFilters() {
+        const searchInput = document.getElementById('searchInput');
+        const sortSelect = document.getElementById('sortSelect');
+        if (searchInput) searchInput.value = '';
+        if (sortSelect) sortSelect.value = 'default';
+        this.searchQuery = '';
+        this.sortOption = 'default';
+        this.setFilter('all');
+        this.showNotification('All filters cleared', 'info');
     }
 
     /**
