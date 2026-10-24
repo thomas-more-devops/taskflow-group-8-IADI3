@@ -493,3 +493,60 @@ body {
 .task-item {
     animation: slideIn 0.3s ease;
 }
+
+
+/* ===================================
+   DUE DATE SYSTEM
+   =================================== */
+.due-date-input {
+    padding: 0.75rem 1rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    color: #4a5568;
+    background: #fff;
+    cursor: pointer;
+}
+.due-date-input:focus { outline: none; border-color: #667eea; }
+
+.date-controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+.date-filters { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.date-filter-btn {
+    padding: 0.4rem 0.9rem;
+    border: 1px solid #cbd5e0;
+    border-radius: 999px;
+    background: #fff;
+    color: #4a5568;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.date-filter-btn:hover { border-color: #667eea; color: #667eea; }
+.date-filter-btn.active { background: #667eea; border-color: #667eea; color: #fff; }
+.date-sort-label { font-size: 0.85rem; color: #4a5568; cursor: pointer; }
+
+.due-badge {
+    display: inline-block;
+    margin-left: 0.75rem;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: #ebf4ff;
+    color: #3182ce;
+    white-space: nowrap;
+}
+.due-badge.due-today { background: #fefcbf; color: #b7791f; }
+.due-badge.due-overdue { background: #fed7d7; color: #c53030; }
+.due-badge.due-done { background: #edf2f7; color: #718096; }
+
+.task-item.overdue { border-left: 4px solid #e53e3e; background: #fff5f5; }
+.stat-overdue .stat-number { color: #e53e3e; }
