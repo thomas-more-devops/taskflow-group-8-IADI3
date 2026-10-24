@@ -80,7 +80,7 @@ body {
 
 .input-options {
     display: grid;
-    grid-template-columns: auto;
+    grid-template-columns: auto auto;
     gap: 0.5rem;
     align-items: center;
 }
@@ -636,4 +636,57 @@ body {
 
 .task-item {
     animation: slideIn 0.3s ease;
+}
+
+/* Task priority controls and labels */
+.priority-input {
+    padding: 0.75rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    background: #f8fafc;
+    color: #4a5568;
+    font-family: inherit;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.priority-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.priority-badge {
+    display: inline-block;
+    flex-shrink: 0;
+    padding: 0.25rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.priority-high {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.priority-medium {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.priority-low {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+@media (max-width: 768px) {
+    .priority-input {
+        width: 100%;
+    }
+
+    .task-content {
+        flex-wrap: wrap;
+    }
 }

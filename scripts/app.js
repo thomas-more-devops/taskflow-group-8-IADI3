@@ -48,6 +48,8 @@ class TaskFlow {
         const categorySelect = document.getElementById('categorySelect');
         const taskText = taskInput.value.trim();
         const category = categorySelect.value;
+        const priorityInput = document.getElementById('priorityInput');
+        const priority = this.normalizePriority(priorityInput ? priorityInput.value : 'medium');
 
         if (taskText === '') {
             this.showNotification('Please enter a task description', 'warning');
@@ -59,6 +61,7 @@ class TaskFlow {
             id: this.taskIdCounter++,
             text: taskText,
             category: category,
+            priority,
             completed: false,
             createdAt: new Date().toISOString(),
             completedAt: null
@@ -136,6 +139,10 @@ class TaskFlow {
         return this.tasks.filter(task => this.matchesCategoryFilter(task));
     }
 
+    normalizePriority(priority) {
+        return ['high', 'medium', 'low'].includes(priority) ? priority : 'medium';
+    }
+
     getCategoryIcon(category) {
         const icons = {
             work: '💼',
@@ -172,11 +179,21 @@ class TaskFlow {
         tasksList.style.display = 'flex';
         emptyState.style.display = 'none';
 
-        // Sort tasks: incomplete first, then by category, then by creation date
+        // Sort tasks: incomplete first, then by priority, then by category, then by creation date
+        const priorityOrder = { high: 1, medium: 2, low: 3 };
         const sortedTasks = [...filteredTasks].sort((a, b) => {
             // First sort by completion status
             if (a.completed !== b.completed) {
                 return a.completed - b.completed;
+            }
+
+            // Pending tasks: high priority first
+            if (!a.completed) {
+                const priorityA = priorityOrder[a.priority] || 2;
+                const priorityB = priorityOrder[b.priority] || 2;
+                if (priorityA !== priorityB) {
+                    return priorityA - priorityB;
+                }
             }
 
             // Then sort by category
@@ -194,6 +211,7 @@ class TaskFlow {
                     <div class="task-checkbox ${task.completed ? 'checked' : ''}"
                          onclick="taskFlow.toggleTask(${task.id})">
                     </div>
+                    <span class="priority-badge priority-${this.normalizePriority(task.priority)}">${this.normalizePriority(task.priority)}</span>
                     <span class="task-text">${this.escapeHtml(task.text)}</span>
                     <span class="category-badge category-${task.category}" style="background-color: ${this.getCategoryColor(task.category)}">
                         ${this.getCategoryIcon(task.category)} ${task.category.charAt(0).toUpperCase() + task.category.slice(1)}
@@ -285,10 +303,11 @@ class TaskFlow {
             const saved = localStorage.getItem('taskflow_tasks');
             const tasks = saved ? JSON.parse(saved) : [];
 
-            // Add default category to existing tasks for backward compatibility
+            // Add default category and priority to existing tasks for backward compatibility
             return tasks.map(task => ({
                 ...task,
-                category: task.category || 'personal'
+                category: task.category || 'personal',
+                priority: this.normalizePriority(task.priority)
             }));
         } catch (error) {
             console.error('Failed to load tasks:', error);
