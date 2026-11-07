@@ -124,7 +124,12 @@ class TaskFlow {
             }
 
             const dueDateInput = document.getElementById('dueDateInput');
-            const dueDate = dueDateInput && dueDateInput.value ? dueDateInput.value : null;
+            const rawDueDate = dueDateInput ? dueDateInput.value : '';
+            if (rawDueDate && !this.isValidDueDate(rawDueDate)) {
+                this.showNotification('Please enter a valid due date', 'warning');
+                return;
+            }
+            const dueDate = rawDueDate || null;
 
             const newTask = {
                 id: this.taskIdCounter++,
@@ -450,6 +455,15 @@ class TaskFlow {
        =================================== */
 
     /**
+     * Checks that a due date is a real date in YYYY-MM-DD format
+     * @param {string} value
+     * @returns {boolean}
+     */
+    isValidDueDate(value) {
+        return /^\d{4}-\d{2}-\d{2}$/.test(value) && !isNaN(new Date(value).getTime());
+    }
+
+    /**
      * Returns today's date as YYYY-MM-DD in local time
      * @returns {string}
      */
@@ -531,7 +545,7 @@ class TaskFlow {
             cls = 'due-today';
             prefix = '📅 Today:';
         }
-        return `<span class="due-badge ${cls}">${prefix} ${label}</span>`;
+        return `<span class="due-badge ${cls}">${prefix} ${this.escapeHtml(label)}</span>`;
     }
 
     /**
