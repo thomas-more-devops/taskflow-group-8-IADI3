@@ -223,7 +223,7 @@ class TaskFlow {
             this.renderTasks();
             this.updateStats();
 
-            const message = task.completed ? 'Task completed! ðŸŽ‰' : 'Task marked as pending';
+            const message = task.completed ? 'Task completed! 🎉' : 'Task marked as pending';
             this.showNotification(message, 'success');
         } catch (error) {
             console.error('Error toggling task:', error);
@@ -307,7 +307,9 @@ class TaskFlow {
                 <div class="task-item ${task.completed ? 'completed' : ''} ${this.isOverdue(task) ? 'overdue' : ''} category-${this.normalizeCategory(task.category)}" data-task-id="${task.id}">
                     <div class="task-content">
                         <div class="task-checkbox ${task.completed ? 'checked' : ''}"
-                             onclick="taskFlow.toggleTask(${task.id})">
+                             role="checkbox" tabindex="0" aria-checked="${task.completed}" aria-label="Mark task as done"
+                             onclick="taskFlow.toggleTask(${task.id})"
+                             onkeydown="if (event.key === ' ' || event.key === 'Enter') { event.preventDefault(); taskFlow.toggleTask(${task.id}); }">
                         </div>
                         <span class="priority-badge priority-${['high', 'medium', 'low'].includes(task.priority) ? task.priority : 'medium'}">${['high', 'medium', 'low'].includes(task.priority) ? task.priority : 'medium'}</span>
                         <span class="task-text">${this.highlightText(task.text)}</span>
@@ -316,10 +318,10 @@ class TaskFlow {
                     </div>
                     <div class="task-actions">
                         <button class="task-btn edit-btn" onclick="taskFlow.editTask(${task.id})" title="Edit task">
-                            âœï¸
+                            ✏️¸
                         </button>
                         <button class="task-btn delete-btn" onclick="taskFlow.deleteTask(${task.id})" title="Delete task">
-                            ðŸ—‘ï¸
+                            🗑️¸
                         </button>
                     </div>
                 </div>
@@ -516,14 +518,21 @@ class TaskFlow {
     }
 
     /**
+     * Returns the display name for a category, e.g. 'work' -> 'Work'
+     * @param {string} category
+     * @returns {string}
+     */
+    getCategoryLabel(category) {
+        return category.charAt(0).toUpperCase() + category.slice(1);
+    }
+    /**
      * Builds the category badge HTML for a task
      * @param {Object} task
      * @returns {string}
      */
     renderCategoryBadge(task) {
         const category = this.normalizeCategory(task.category);
-        const label = category.charAt(0).toUpperCase() + category.slice(1);
-        return `<span class="category-badge" style="background-color: ${this.getCategoryColor(category)}">${this.getCategoryIcon(category)} ${label}</span>`;
+        return `<span class="category-badge" style="background-color: ${this.getCategoryColor(category)}">${this.getCategoryIcon(category)} ${this.getCategoryLabel(category)}</span>`;
     }
 
     /**
@@ -534,9 +543,20 @@ class TaskFlow {
         if (!categoryStats) return;
 
         const categories = ['work', 'personal', 'shopping', 'health', 'study'];
+        // Count totals in a single pass over the tasks
+        const counts = {};
+        categories.forEach(category => {
+            counts[category] = { total: 0, completed: 0 };
+        });
+        this.tasks.forEach(task => {
+            const entry = counts[task.category];
+            if (!entry) return;
+            entry.total++;
+            if (task.completed) entry.completed++;
+        });
+
         const categoryData = categories.map(category => {
-            const total = this.tasks.filter(task => task.category === category).length;
-            const completed = this.tasks.filter(task => task.category === category && task.completed).length;
+            const { total, completed } = counts[category];
             return {
                 category,
                 total,
@@ -554,8 +574,7 @@ class TaskFlow {
             <div class="category-stat-item">
                 <div class="category-stat-header">
                     <span class="category-icon">${this.getCategoryIcon(data.category)}</span>
-                    <span class="category-name">${data.category.charAt(0).toUpperCase() + data.category.slice(1)}</span>
-                    <span class="category-total">${data.total}</span>
+                    <span class="category-name">${this.getCategoryLabel(data.category)}</span>                    <span class="category-total">${data.total}</span>
                 </div>
                 <div class="category-progress">
                     <div class="progress-bar">
