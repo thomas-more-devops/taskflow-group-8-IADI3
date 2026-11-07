@@ -318,10 +318,10 @@ class TaskFlow {
                     </div>
                     <div class="task-actions">
                         <button class="task-btn edit-btn" onclick="taskFlow.editTask(${task.id})" title="Edit task">
-                            ✏️¸
+                            ✏️                        
                         </button>
                         <button class="task-btn delete-btn" onclick="taskFlow.deleteTask(${task.id})" title="Delete task">
-                            🗑️¸
+                            🗑️
                         </button>
                     </div>
                 </div>
