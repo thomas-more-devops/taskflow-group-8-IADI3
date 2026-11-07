@@ -419,8 +419,12 @@ class TaskFlow {
         if (searchInput) {
             // Real-time search as the user types
             searchInput.addEventListener('input', () => {
-                this.searchQuery = searchInput.value.trim().toLowerCase();
-                this.renderTasks();
+                // Wait until the user stops typing before re-rendering
+                clearTimeout(this.searchTimer);
+                this.searchTimer = setTimeout(() => {
+                    this.searchQuery = searchInput.value.trim().toLowerCase();
+                    this.renderTasks();
+                }, 200);
             });
         }
 
@@ -513,10 +517,21 @@ class TaskFlow {
      * @returns {string} Safe HTML
      */
     highlightText(text) {
-        const safe = this.escapeHtml(text);
-        if (!this.searchQuery) return safe;
-        const query = this.escapeHtml(this.searchQuery).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        return safe.replace(new RegExp(`(${query})`, 'gi'), '<mark class="search-highlight">$1</mark>');
+        if (!this.searchQuery) return this.escapeHtml(text);
+        // Find matches in the raw text, then escape each piece separately,
+        // so the search never matches inside entities like &amp;
+        const lowerText = text.toLowerCase();
+        const queryLength = this.searchQuery.length;
+        let result = '';
+        let position = 0;
+        let matchIndex = lowerText.indexOf(this.searchQuery, position);
+        while (matchIndex !== -1) {
+            result += this.escapeHtml(text.slice(position, matchIndex));
+            result += `<mark class="search-highlight">${this.escapeHtml(text.slice(matchIndex, matchIndex + queryLength))}</mark>`;
+            position = matchIndex + queryLength;
+            matchIndex = lowerText.indexOf(this.searchQuery, position);
+        }
+        return result + this.escapeHtml(text.slice(position));
     }
 
     /**
