@@ -13,6 +13,8 @@ class TaskFlow {
             this.searchQuery = '';
             this.activeFilter = 'all';
             this.sortOption = 'default';
+            this.dateFilter = 'all';
+            this.sortByDueDate = false;
             this.taskIdCounter = this.getNextTaskId();
             this.initializeApp();
             this.bindEvents();
@@ -74,6 +76,19 @@ class TaskFlow {
             });
 
             this.bindSearchEvents();
+            // Due date filter buttons
+            document.querySelectorAll('.date-filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => this.setDateFilter(btn.dataset.dateFilter));
+            });
+
+            // Due date sorting toggle
+            const sortToggle = document.getElementById('sortByDueDate');
+            if (sortToggle) {
+                sortToggle.addEventListener('change', () => {
+                    this.sortByDueDate = sortToggle.checked;
+                    this.renderTasks();
+                });
+            }
 
             taskInput.focus();
         } catch (error) {
@@ -112,13 +127,22 @@ class TaskFlow {
                 return;
             }
 
+            const dueDateInput = document.getElementById('dueDateInput');
+            const rawDueDate = dueDateInput ? dueDateInput.value : '';
+            if (rawDueDate && !this.isValidDueDate(rawDueDate)) {
+                this.showNotification('Please enter a valid due date', 'warning');
+                return;
+            }
+            const dueDate = rawDueDate || null;
+
             const newTask = {
                 id: this.taskIdCounter++,
                 text: taskText,
                 priority,
                 completed: false,
                 createdAt: new Date().toISOString(),
-                completedAt: null
+                completedAt: null,
+                dueDate: dueDate
             };
 
             this.tasks.push(newTask);
@@ -127,6 +151,7 @@ class TaskFlow {
             this.updateStats();
 
             taskInput.value = '';
+            if (dueDateInput) dueDateInput.value = '';
             taskInput.focus();
 
             this.showNotification('Task added successfully!', 'success');
@@ -255,7 +280,7 @@ class TaskFlow {
             tasksList.style.display = 'flex';
             emptyState.style.display = 'none';
 
-            const visibleTasks = this.getFilteredTasks();
+            const visibleTasks = this.filterByDueDate(this.getFilteredTasks());
             this.updateSearchInfo(visibleTasks.length);
 
             if (visibleTasks.length === 0) {
@@ -263,16 +288,19 @@ class TaskFlow {
                 return;
             }
 
-            const sortedTasks = this.sortTasks(visibleTasks);
+            const sortedTasks = this.sortByDueDate
+                ? [...visibleTasks].sort((a, b) => (a.completed - b.completed) || this.compareDueDates(a, b))
+                : this.sortTasks(visibleTasks);
 
             tasksList.innerHTML = sortedTasks.map(task => `
-                <div class="task-item ${task.completed ? 'completed' : ''}" data-task-id="${task.id}">
+                <div class="task-item ${task.completed ? 'completed' : ''} ${this.isOverdue(task) ? 'overdue' : ''}" data-task-id="${task.id}">
                     <div class="task-content">
                         <div class="task-checkbox ${task.completed ? 'checked' : ''}"
                              onclick="taskFlow.toggleTask(${task.id})">
                         </div>
                         <span class="priority-badge priority-${['high', 'medium', 'low'].includes(task.priority) ? task.priority : 'medium'}">${['high', 'medium', 'low'].includes(task.priority) ? task.priority : 'medium'}</span>
                         <span class="task-text">${this.highlightText(task.text)}</span>
+                        ${this.renderDueBadge(task)}
                     </div>
                     <div class="task-actions">
                         <button class="task-btn edit-btn" onclick="taskFlow.editTask(${task.id})" title="Edit task">
@@ -312,6 +340,15 @@ class TaskFlow {
             totalElement.textContent = totalTasks;
             completedElement.textContent = completedTasks;
             pendingElement.textContent = pendingTasks;
+
+            const dueTodayElement = document.getElementById('dueTodayTasks');
+            const overdueElement = document.getElementById('overdueTasks');
+            if (dueTodayElement) {
+                dueTodayElement.textContent = this.tasks.filter(t => this.isDueToday(t)).length;
+            }
+            if (overdueElement) {
+                overdueElement.textContent = this.tasks.filter(t => this.isOverdue(t)).length;
+            }
 
             if (taskCountElement) {
                 taskCountElement.textContent = `${totalTasks} ${totalTasks === 1 ? 'task' : 'tasks'}`;
@@ -557,6 +594,104 @@ class TaskFlow {
         this.sortOption = 'default';
         this.setFilter('all');
         this.showNotification('All filters cleared', 'info');
+    }
+
+    /* ===================================
+       DUE DATE FUNCTIONS
+       =================================== */
+
+    /**
+     * Checks that a due date is a real date in YYYY-MM-DD format
+     * @param {string} value
+     * @returns {boolean}
+     */
+    isValidDueDate(value) {
+        return /^\d{4}-\d{2}-\d{2}$/.test(value) && !isNaN(new Date(value).getTime());
+    }
+
+    /**
+     * Returns today's date as YYYY-MM-DD in local time
+     * @returns {string}
+     */
+    getTodayString() {
+        const now = new Date();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${now.getFullYear()}-${month}-${day}`;
+    }
+
+    /**
+     * Checks whether a pending task is due today
+     * @param {Object} task
+     * @returns {boolean}
+     */
+    isDueToday(task) {
+        return !!task.dueDate && !task.completed && task.dueDate === this.getTodayString();
+    }
+
+    /**
+     * Checks whether a pending task is past its due date
+     * @param {Object} task
+     * @returns {boolean}
+     */
+    isOverdue(task) {
+        return !!task.dueDate && !task.completed && task.dueDate < this.getTodayString();
+    }
+
+    /**
+     * Sort helper: earliest due date first, tasks without a date last
+     */
+    compareDueDates(a, b) {
+        if (!a.dueDate && !b.dueDate) return 0;
+        if (!a.dueDate) return 1;
+        if (!b.dueDate) return -1;
+        return a.dueDate.localeCompare(b.dueDate);
+    }
+
+    /**
+     * Filters tasks by the active date filter (all, today, overdue)
+     * @param {Array} tasks
+     * @returns {Array}
+     */
+    filterByDueDate(tasks) {
+        if (this.dateFilter === 'today') return tasks.filter(t => this.isDueToday(t));
+        if (this.dateFilter === 'overdue') return tasks.filter(t => this.isOverdue(t));
+        return tasks;
+    }
+
+    /**
+     * Sets the active date filter and re-renders the list
+     * @param {string} filter - all | today | overdue
+     */
+    setDateFilter(filter) {
+        this.dateFilter = filter;
+        document.querySelectorAll('.date-filter-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.dateFilter === filter);
+        });
+        this.renderTasks();
+    }
+
+    /**
+     * Builds the due date badge HTML for a task
+     * @param {Object} task
+     * @returns {string}
+     */
+    renderDueBadge(task) {
+        if (!task.dueDate) return '';
+        const [y, m, d] = task.dueDate.split('-').map(Number);
+        const label = new Date(y, m - 1, d).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+        let cls = '';
+        let prefix = '📅';
+        if (task.completed) {
+            cls = 'due-done';
+        } else if (this.isOverdue(task)) {
+            cls = 'due-overdue';
+            prefix = '⚠️ Overdue:';
+        } else if (this.isDueToday(task)) {
+            cls = 'due-today';
+            prefix = '📅 Today:';
+        }
+        return `<span class="due-badge ${cls}">${prefix} ${this.escapeHtml(label)}</span>`;
     }
 
     /**
