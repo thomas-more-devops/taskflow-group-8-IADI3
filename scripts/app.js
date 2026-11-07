@@ -14,6 +14,7 @@ class TaskFlow {
             this.activeFilter = 'all';
             this.sortOption = 'default';
             this.dateFilter = 'all';
+            this.currentCategoryFilter = 'all';
             this.sortByDueDate = false;
             this.taskIdCounter = this.getNextTaskId();
             this.initializeApp();
@@ -75,6 +76,10 @@ class TaskFlow {
                 }
             });
 
+            // Category filter buttons
+            document.querySelectorAll('.category-filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => this.setCategoryFilter(btn.dataset.category));
+            });
             this.bindSearchEvents();
             // Due date filter buttons
             document.querySelectorAll('.date-filter-btn').forEach(btn => {
@@ -135,10 +140,15 @@ class TaskFlow {
             }
             const dueDate = rawDueDate || null;
 
+
+            const categorySelect = document.getElementById('categorySelect');
+            const category = this.normalizeCategory(categorySelect ? categorySelect.value : 'personal');
+
             const newTask = {
                 id: this.taskIdCounter++,
                 text: taskText,
                 priority,
+                category,
                 completed: false,
                 createdAt: new Date().toISOString(),
                 completedAt: null,
@@ -152,6 +162,7 @@ class TaskFlow {
 
             taskInput.value = '';
             if (dueDateInput) dueDateInput.value = '';
+            if (categorySelect) categorySelect.value = 'personal';
             taskInput.focus();
 
             this.showNotification('Task added successfully!', 'success');
@@ -212,7 +223,7 @@ class TaskFlow {
             this.renderTasks();
             this.updateStats();
 
-            const message = task.completed ? 'Task completed! ðŸŽ‰' : 'Task marked as pending';
+            const message = task.completed ? 'Task completed! 🎉' : 'Task marked as pending';
             this.showNotification(message, 'success');
         } catch (error) {
             console.error('Error toggling task:', error);
@@ -293,21 +304,24 @@ class TaskFlow {
                 : this.sortTasks(visibleTasks);
 
             tasksList.innerHTML = sortedTasks.map(task => `
-                <div class="task-item ${task.completed ? 'completed' : ''} ${this.isOverdue(task) ? 'overdue' : ''}" data-task-id="${task.id}">
+                <div class="task-item ${task.completed ? 'completed' : ''} ${this.isOverdue(task) ? 'overdue' : ''} category-${this.normalizeCategory(task.category)}" data-task-id="${task.id}">
                     <div class="task-content">
                         <div class="task-checkbox ${task.completed ? 'checked' : ''}"
-                             onclick="taskFlow.toggleTask(${task.id})">
+                             role="checkbox" tabindex="0" aria-checked="${task.completed}" aria-label="Mark task as done"
+                             onclick="taskFlow.toggleTask(${task.id})"
+                             onkeydown="if (event.key === ' ' || event.key === 'Enter') { event.preventDefault(); taskFlow.toggleTask(${task.id}); }">
                         </div>
                         <span class="priority-badge priority-${['high', 'medium', 'low'].includes(task.priority) ? task.priority : 'medium'}">${['high', 'medium', 'low'].includes(task.priority) ? task.priority : 'medium'}</span>
                         <span class="task-text">${this.highlightText(task.text)}</span>
                         ${this.renderDueBadge(task)}
+                        ${this.renderCategoryBadge(task)}
                     </div>
                     <div class="task-actions">
                         <button class="task-btn edit-btn" onclick="taskFlow.editTask(${task.id})" title="Edit task">
-                            âœï¸
+                            ✏️                        
                         </button>
                         <button class="task-btn delete-btn" onclick="taskFlow.deleteTask(${task.id})" title="Delete task">
-                            ðŸ—‘ï¸
+                            🗑️
                         </button>
                     </div>
                 </div>
@@ -349,6 +363,12 @@ class TaskFlow {
             if (overdueElement) {
                 overdueElement.textContent = this.tasks.filter(t => this.isOverdue(t)).length;
             }
+
+            const categoriesUsedElement = document.getElementById('categoriesUsed');
+            if (categoriesUsedElement) {
+                categoriesUsedElement.textContent = new Set(this.tasks.map(t => t.category)).size;
+            }
+            this.updateCategoryStats();
 
             if (taskCountElement) {
                 taskCountElement.textContent = `${totalTasks} ${totalTasks === 1 ? 'task' : 'tasks'}`;
@@ -406,7 +426,8 @@ class TaskFlow {
                 ...task,
                 priority: ['high', 'medium', 'low'].includes(task.priority)
                     ? task.priority
-                    : 'medium'
+                    : 'medium',
+                category: this.normalizeCategory(task.category)
             }));
         } catch (error) {
             console.error('Failed to load tasks:', error);
@@ -441,6 +462,129 @@ class TaskFlow {
         }
     }
 
+    /* ===================================
+       CATEGORY FUNCTIONS
+       =================================== */
+
+    /**
+     * Returns a known category, or 'personal' for anything unexpected
+     * @param {string} category
+     * @returns {string}
+     */
+    normalizeCategory(category) {
+        const categories = ['work', 'personal', 'shopping', 'health', 'study'];
+        return categories.includes(category) ? category : 'personal';
+    }
+
+    /**
+     * Sets the active category filter and re-renders the list
+     * @param {string} category - all | work | personal | shopping | health | study
+     */
+    setCategoryFilter(category) {
+        this.currentCategoryFilter = category;
+        document.querySelectorAll('.category-filter-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.category === category);
+        });
+        this.renderTasks();
+    }
+
+    /**
+     * Checks whether a task matches the active category filter
+     * @param {Object} task
+     * @returns {boolean}
+     */
+    matchesCategoryFilter(task) {
+        return this.currentCategoryFilter === 'all' || task.category === this.currentCategoryFilter;
+    }
+
+    /**
+     * Returns the icon for a category
+     * @param {string} category
+     * @returns {string}
+     */
+    getCategoryIcon(category) {
+        const icons = { work: '💼', personal: '📝', shopping: '🛒', health: '🏥', study: '📚' };
+        return icons[category] || '📝';
+    }
+
+    /**
+     * Returns the badge colour for a category
+     * @param {string} category
+     * @returns {string}
+     */
+    getCategoryColor(category) {
+        const colors = { work: '#3182ce', personal: '#38a169', shopping: '#ed8936', health: '#e53e3e', study: '#805ad5' };
+        return colors[category] || '#38a169';
+    }
+
+    /**
+     * Returns the display name for a category, e.g. 'work' -> 'Work'
+     * @param {string} category
+     * @returns {string}
+     */
+    getCategoryLabel(category) {
+        return category.charAt(0).toUpperCase() + category.slice(1);
+    }
+    /**
+     * Builds the category badge HTML for a task
+     * @param {Object} task
+     * @returns {string}
+     */
+    renderCategoryBadge(task) {
+        const category = this.normalizeCategory(task.category);
+        return `<span class="category-badge" style="background-color: ${this.getCategoryColor(category)}">${this.getCategoryIcon(category)} ${this.getCategoryLabel(category)}</span>`;
+    }
+
+    /**
+     * Renders the per-category progress list in the stats section
+     */
+    updateCategoryStats() {
+        const categoryStats = document.getElementById('categoryStats');
+        if (!categoryStats) return;
+
+        const categories = ['work', 'personal', 'shopping', 'health', 'study'];
+        // Count totals in a single pass over the tasks
+        const counts = {};
+        categories.forEach(category => {
+            counts[category] = { total: 0, completed: 0 };
+        });
+        this.tasks.forEach(task => {
+            const entry = counts[task.category];
+            if (!entry) return;
+            entry.total++;
+            if (task.completed) entry.completed++;
+        });
+
+        const categoryData = categories.map(category => {
+            const { total, completed } = counts[category];
+            return {
+                category,
+                total,
+                completed,
+                percentage: total > 0 ? Math.round((completed / total) * 100) : 0
+            };
+        }).filter(data => data.total > 0);
+
+        if (categoryData.length === 0) {
+            categoryStats.innerHTML = '<p class="no-categories">No tasks with categories yet.</p>';
+            return;
+        }
+
+        categoryStats.innerHTML = categoryData.map(data => `
+            <div class="category-stat-item">
+                <div class="category-stat-header">
+                    <span class="category-icon">${this.getCategoryIcon(data.category)}</span>
+                    <span class="category-name">${this.getCategoryLabel(data.category)}</span>                    <span class="category-total">${data.total}</span>
+                </div>
+                <div class="category-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${data.percentage}%; background-color: ${this.getCategoryColor(data.category)}"></div>
+                    </div>
+                    <span class="progress-text">${data.completed}/${data.total} completed (${data.percentage}%)</span>
+                </div>
+            </div>
+        `).join('');
+    }
     /* ===================================
        SEARCH & FILTER FUNCTIONS
        =================================== */
@@ -501,6 +645,10 @@ class TaskFlow {
         const today = new Date().toDateString();
         return this.tasks.filter(task => {
             if (this.searchQuery && !task.text.toLowerCase().includes(this.searchQuery)) {
+                return false;
+            }
+
+            if (!this.matchesCategoryFilter(task)) {
                 return false;
             }
             switch (this.activeFilter) {
