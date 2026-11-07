@@ -10,6 +10,9 @@ class TaskFlow {
     constructor() {
         try {
             this.tasks = this.loadTasks();
+            this.searchQuery = '';
+            this.activeFilter = 'all';
+            this.sortOption = 'default';
             this.dateFilter = 'all';
             this.sortByDueDate = false;
             this.taskIdCounter = this.getNextTaskId();
@@ -72,6 +75,7 @@ class TaskFlow {
                 }
             });
 
+            this.bindSearchEvents();
             // Due date filter buttons
             document.querySelectorAll('.date-filter-btn').forEach(btn => {
                 btn.addEventListener('click', () => this.setDateFilter(btn.dataset.dateFilter));
@@ -276,30 +280,17 @@ class TaskFlow {
             tasksList.style.display = 'flex';
             emptyState.style.display = 'none';
 
-            const priorityOrder = { high: 1, medium: 2, low: 3 };
-            const visibleTasks = this.filterByDueDate(this.tasks);
+            const visibleTasks = this.filterByDueDate(this.getFilteredTasks());
+            this.updateSearchInfo(visibleTasks.length);
 
             if (visibleTasks.length === 0) {
-                tasksList.innerHTML = '<p class="no-results">No tasks match this date filter.</p>';
+                tasksList.innerHTML = '<p class="no-results">No tasks match your search or filters.</p>';
                 return;
             }
 
-            const sortedTasks = [...visibleTasks].sort((a, b) => {
-                if (a.completed !== b.completed) {
-                    return a.completed - b.completed;
-                }
-                if (this.sortByDueDate) {
-                    return this.compareDueDates(a, b);
-                }
-                if (!a.completed) {
-                    const priorityA = priorityOrder[a.priority] || 2;
-                    const priorityB = priorityOrder[b.priority] || 2;
-                    if (priorityA !== priorityB) {
-                        return priorityA - priorityB;
-                    }
-                }
-                return new Date(b.createdAt) - new Date(a.createdAt);
-            });
+            const sortedTasks = this.sortByDueDate
+                ? [...visibleTasks].sort((a, b) => (a.completed - b.completed) || this.compareDueDates(a, b))
+                : this.sortTasks(visibleTasks);
 
             tasksList.innerHTML = sortedTasks.map(task => `
                 <div class="task-item ${task.completed ? 'completed' : ''} ${this.isOverdue(task) ? 'overdue' : ''}" data-task-id="${task.id}">
@@ -308,7 +299,7 @@ class TaskFlow {
                              onclick="taskFlow.toggleTask(${task.id})">
                         </div>
                         <span class="priority-badge priority-${['high', 'medium', 'low'].includes(task.priority) ? task.priority : 'medium'}">${['high', 'medium', 'low'].includes(task.priority) ? task.priority : 'medium'}</span>
-                        <span class="task-text">${this.escapeHtml(task.text)}</span>
+                        <span class="task-text">${this.highlightText(task.text)}</span>
                         ${this.renderDueBadge(task)}
                     </div>
                     <div class="task-actions">
@@ -448,6 +439,161 @@ class TaskFlow {
             console.error('Failed to load task counter:', error);
             return 1;
         }
+    }
+
+    /* ===================================
+       SEARCH & FILTER FUNCTIONS
+       =================================== */
+
+    /**
+     * Binds events for the search input, filter buttons, sort select and clear button
+     */
+    bindSearchEvents() {
+        const searchInput = document.getElementById('searchInput');
+        const sortSelect = document.getElementById('sortSelect');
+        const clearBtn = document.getElementById('clearFiltersBtn');
+
+        if (searchInput) {
+            // Real-time search as the user types
+            searchInput.addEventListener('input', () => {
+                // Wait until the user stops typing before re-rendering
+                clearTimeout(this.searchTimer);
+                this.searchTimer = setTimeout(() => {
+                    this.searchQuery = searchInput.value.trim().toLowerCase();
+                    this.renderTasks();
+                }, 200);
+            });
+        }
+
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => this.setFilter(btn.dataset.filter));
+        });
+
+        if (sortSelect) {
+            sortSelect.addEventListener('change', () => {
+                this.sortOption = sortSelect.value;
+                this.renderTasks();
+            });
+        }
+
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => this.clearFilters());
+        }
+    }
+
+    /**
+     * Sets the active quick filter and updates the button styles
+     * @param {string} filter - all | pending | completed | today
+     */
+    setFilter(filter) {
+        this.activeFilter = filter;
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.filter === filter);
+        });
+        this.renderTasks();
+    }
+
+    /**
+     * Applies the search query and active filter to the task list
+     * @returns {Array} Tasks that match
+     */
+    getFilteredTasks() {
+        const today = new Date().toDateString();
+        return this.tasks.filter(task => {
+            if (this.searchQuery && !task.text.toLowerCase().includes(this.searchQuery)) {
+                return false;
+            }
+            switch (this.activeFilter) {
+                case 'pending': return !task.completed;
+                case 'completed': return task.completed;
+                case 'today': return new Date(task.createdAt).toDateString() === today;
+                default: return true;
+            }
+        });
+    }
+
+    /**
+     * Sorts tasks according to the selected sort option
+     * @param {Array} tasks
+     * @returns {Array} Sorted copy
+     */
+    sortTasks(tasks) {
+        const sorted = [...tasks];
+        switch (this.sortOption) {
+            case 'newest':
+                return sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            case 'oldest':
+                return sorted.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+            case 'az':
+                return sorted.sort((a, b) => a.text.localeCompare(b.text));
+            case 'za':
+                return sorted.sort((a, b) => b.text.localeCompare(a.text));
+            default: {
+                // Pending first, then by priority (high → low), then newest
+                const priorityOrder = { high: 1, medium: 2, low: 3 };
+                return sorted.sort((a, b) => {
+                    if (a.completed !== b.completed) {
+                        return a.completed - b.completed;
+                    }
+                    if (!a.completed) {
+                        const priorityA = priorityOrder[a.priority] || 2;
+                        const priorityB = priorityOrder[b.priority] || 2;
+                        if (priorityA !== priorityB) {
+                            return priorityA - priorityB;
+                        }
+                    }
+                    return new Date(b.createdAt) - new Date(a.createdAt);
+                });
+            }
+        }
+    }
+
+    /**
+     * Escapes task text and wraps search matches in a highlight mark
+     * @param {string} text
+     * @returns {string} Safe HTML
+     */
+    highlightText(text) {
+        if (!this.searchQuery) return this.escapeHtml(text);
+        // Find matches in the raw text, then escape each piece separately,
+        // so the search never matches inside entities like &amp;
+        const lowerText = text.toLowerCase();
+        const queryLength = this.searchQuery.length;
+        let result = '';
+        let position = 0;
+        let matchIndex = lowerText.indexOf(this.searchQuery, position);
+        while (matchIndex !== -1) {
+            result += this.escapeHtml(text.slice(position, matchIndex));
+            result += `<mark class="search-highlight">${this.escapeHtml(text.slice(matchIndex, matchIndex + queryLength))}</mark>`;
+            position = matchIndex + queryLength;
+            matchIndex = lowerText.indexOf(this.searchQuery, position);
+        }
+        return result + this.escapeHtml(text.slice(position));
+    }
+
+    /**
+     * Shows how many tasks match the current search and filters
+     * @param {number} count
+     */
+    updateSearchInfo(count) {
+        const info = document.getElementById('searchResultsInfo');
+        if (!info) return;
+        const filtering = this.searchQuery || this.activeFilter !== 'all';
+        info.textContent = filtering ? `Showing ${count} of ${this.tasks.length} tasks` : '';
+    }
+
+    /**
+     * Resets search, filter and sort to their defaults
+     */
+    clearFilters() {
+        const searchInput = document.getElementById('searchInput');
+        const sortSelect = document.getElementById('sortSelect');
+        if (searchInput) searchInput.value = '';
+        if (sortSelect) sortSelect.value = 'default';
+        this.searchQuery = '';
+        this.sortOption = 'default';
+        this.setFilter('all');
+        this.showNotification('All filters cleared', 'info');
     }
 
     /* ===================================
